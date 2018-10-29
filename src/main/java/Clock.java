@@ -15,12 +15,7 @@ public class Clock {
     }
 
     public long getCurrentTime(){
-        return System.currentTimeMillis() + retard;
-    }
-
-
-    public long getDelai() {
-        return delai;
+        return System.currentTimeMillis() + retard + delai + ecart;
     }
 
     public void setDelai(long delai) {
@@ -34,6 +29,4 @@ public class Clock {
     public void setEcart(long ecart) {
         this.ecart = ecart;
     }
-
-
 }

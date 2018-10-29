@@ -111,7 +111,9 @@ public class Slave extends Thread {
         }
 
         public void run() {
-            while (true) try {
+
+            boolean synced = false;
+            while (!synced) try {
                 // Receive multicast packet
                 log.info("waiting for message");
 
@@ -150,11 +152,12 @@ public class Slave extends Thread {
 
                         // Retrieve master time from sync and determine ecart
                         long tSyncMaster = Long.valueOf((followupPayload.substring(0, followupPayload.length() - syncId.length())).trim());
-                        long ecart = Math.abs(tSyncMaster - syncTime);
+                        long ecart = tSyncMaster - syncTime;
 
                         // Sync clock
                         slaveClock.setEcart(ecart);
                         log.info("multicast got tMaster post followup : " + ecart);
+                        synced = true;
 
                     } else {
                         log.warning("multicast follow up id check failed! [" + syncId + "] - [" + followupId + "]: " + followupMsg);
@@ -171,6 +174,6 @@ public class Slave extends Thread {
 
     public static void main(String... args) {
 
-        Slave slave = new Slave("localhost", 4323, 2000, 900);
+        Slave slave = new Slave("localhost", 4446, 2000, 900);
     }
 }
