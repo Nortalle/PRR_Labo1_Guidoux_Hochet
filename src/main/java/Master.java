@@ -91,7 +91,7 @@ public class Master extends Thread {
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     masterSocket.receive(packet);
                     long tMaster = masterClock.getCurrentTime();
-                    String msg = new String(packet.getData()).trim();
+                    String msg = new String(packet.getData(), 0, packet.getLength());
 
                     // Got a delay request
                     // Verify that it's actually a delay request, and isolate checking payload
@@ -121,6 +121,6 @@ public class Master extends Thread {
     }
 
     public static void main(String[] args) {
-        Master master = new Master(4446, 500);
+        Master master = new Master(4446, 2000);
     }
 }

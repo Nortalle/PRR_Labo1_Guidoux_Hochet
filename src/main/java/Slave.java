@@ -34,8 +34,8 @@ public class Slave extends Thread {
         while (true) {
             try {
 
+                sleep(random(this.k * 1, this.k * 2));
                 log.info("d===============================SDFFSDFFDSDFD=========================");
-                sleep(random(this.k * 4, this.k * 60));
                 delayRequest();
                 log.info("CurrentTime: " + slaveClock.getCurrentTime());
 
@@ -60,7 +60,7 @@ public class Slave extends Thread {
             String check = checkPayload();
             byte[] request = (Protocol.DELAY_REQUEST + check).getBytes();
             DatagramPacket packetToMaster = new DatagramPacket(request, request.length, masterAddress, Protocol.POINT_TO_POINT);
-            long localTimeSentRequest = slaveClock.getCurrentTime(); // Tes
+            long localTimeSentRequest = slaveClock.getCurrentTime(); // Tes //t3
             socket.send(packetToMaster);
 
             // Wait for server response
@@ -69,19 +69,22 @@ public class Slave extends Thread {
             socket.receive(responsePacket);
 
             // Parse response, extract milliseconds
-            String msg = new String(responsePacket.getData());
+            String msg = new String(responsePacket.getData(), 0, responsePacket.getLength());
+
 
             if (msg.substring(0, Protocol.DELAY_RESPONSE.length()).equals(Protocol.DELAY_RESPONSE)) {
 
                 String payload = msg.substring(Protocol.DELAY_RESPONSE.length());
-                String receivedCheck = payload.substring(0, check.length());
 
-                if (receivedCheck.equals(check)) {
-                    Integer serverRequestArriveTime = Integer.valueOf(payload.substring(check.length())); // Tm
-                    long delai = (serverRequestArriveTime - localTimeSentRequest) / 2;
+                if (payload.startsWith(check)) {
+                    long serverRequestArriveTime = Long.valueOf(payload.substring(check.length())); // Tm
+                    long delai = (serverRequestArriveTime - localTimeSentRequest); //ds2m
                     slaveClock.setDelai(delai);
+
+
+                    log.info(" offset found : " + slaveClock.getOffset());
                 } else {
-                    log.warning("didnt get correct check, sent [" + check + "], got [" + receivedCheck + "]");
+                    log.warning("didnt get correct check, sent [" + check + "], got [" + payload + "]");
                 }
             } else {
                 log.warning("didnt get a valid SERVER_RESPONSE");
@@ -147,7 +150,7 @@ public class Slave extends Thread {
 
                         // Retrieve master time from sync and determine ecart
                         long tSyncMaster = Long.valueOf((followupPayload.substring(0, followupPayload.length() - syncId.length())).trim());
-                        long ecart = tSyncMaster - syncTime;
+                        long ecart = syncTime - tSyncMaster; //dm2s
 
                         // Sync clock
                         slaveClock.setEcart(ecart);
@@ -171,6 +174,6 @@ public class Slave extends Thread {
 
     public static void main(String... args) {
 
-        Slave slave = new Slave("localhost", 4446, 500, 900);
+        Slave slave = new Slave("localhost", 4446, 2000, 900);
     }
 }
