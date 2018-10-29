@@ -2,19 +2,38 @@ import org.joda.time.DateTime;
 
 public class Clock {
 
-    long delay_init_ms;
-    long delay_ms;
+    private long retard = 0;
+    private long delai   = 0;
+    private long ecart   = 0;
 
-
-    public Clock(int delay_init_ms) {
-        this.delay_init_ms = delay_init_ms;
+    public Clock(long retard) {
+        this.retard = retard;
     }
 
-    public long getTime(){
-        return System.currentTimeMillis() + this.delay_init_ms;
+    public Clock(){
+        this(0);
     }
 
-    public void setDelay(long delay_ms) {
-        this.delay_ms = delay_ms;
+    public long getCurrentTime(){
+        return System.currentTimeMillis() + retard;
     }
+
+
+    public long getDelai() {
+        return delai;
+    }
+
+    public void setDelai(long delai) {
+        this.delai = delai;
+    }
+
+    public long getEcart() {
+        return ecart;
+    }
+
+    public void setEcart(long ecart) {
+        this.ecart = ecart;
+    }
+
+
 }

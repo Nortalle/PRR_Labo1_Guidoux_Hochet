@@ -15,12 +15,12 @@ public class Slave extends Thread {
     private Integer k;
     private SlaveListener listener;
 
-    public Slave(String masterAddress, Integer masterPort, Integer k, Integer secondDuration) {
+    public Slave(String masterAddress, Integer masterPort, Integer k, Integer retard) {
         try {
             this.listener = new SlaveListener();
             this.masterAddress = InetAddress.getByName(masterAddress);
             this.masterPort = masterPort;
-            this.slaveClock = new Clock(secondDuration);
+            this.slaveClock = new Clock(retard);
             this.socket = new DatagramSocket();
             this.k = k;
 
@@ -31,11 +31,12 @@ public class Slave extends Thread {
     }
 
     public void run() {
-        while(true) {
+        while (true) {
             try {
 
-                sleep(random(this.k*4, this.k*60));
+                sleep(random(this.k * 4, this.k * 60));
                 delayRequest();
+                log.info("CurrentTime: " + slaveClock.getCurrentTime());
 
             } catch (InterruptedException e) {
                 log.severe("Slave failed sleeping");
@@ -44,7 +45,7 @@ public class Slave extends Thread {
     }
 
     private int random(int min, int max) {
-        return (int)(Math.random() * ((max - min) + 1)) + min;
+        return (int) (Math.random() * ((max - min) + 1)) + min;
     }
 
     private String checkPayload() {
@@ -57,7 +58,7 @@ public class Slave extends Thread {
             String check = checkPayload();
             byte[] request = (Protocol.DELAY_REQUEST + check).getBytes();
             DatagramPacket packetToMaster = new DatagramPacket(request, request.length, masterAddress, masterPort);
-            long localTimeSentRequest = slaveClock.getTime(); // Tes
+            long localTimeSentRequest = slaveClock.getCurrentTime(); // Tes
             socket.send(packetToMaster);
 
             // Wait for server response
@@ -68,21 +69,19 @@ public class Slave extends Thread {
             // Parse response, extract milliseconds
             String msg = new String(responsePacket.getData());
 
-            if(msg.substring(0, Protocol.DELAY_RESPONSE.length()).equals(Protocol.DELAY_RESPONSE)) {
+            if (msg.substring(0, Protocol.DELAY_RESPONSE.length()).equals(Protocol.DELAY_RESPONSE)) {
 
                 String payload = msg.substring(Protocol.DELAY_RESPONSE.length());
                 String receivedCheck = payload.substring(0, check.length());
 
-                if(receivedCheck.equals(check)) {
+                if (receivedCheck.equals(check)) {
                     Integer serverRequestArriveTime = Integer.valueOf(payload.substring(check.length())); // Tm
-                    Integer delai = (serverRequestArriveTime - localTimeSentRequest) / 2;
-                    slaveClock.setDelay(delai);
-                }
-                else {
+                    long delai = (serverRequestArriveTime - localTimeSentRequest) / 2;
+                    slaveClock.setDelai(delai);
+                } else {
                     log.warning("didnt get correct check, sent [" + check + "], got [" + receivedCheck + "]");
                 }
-            }
-            else {
+            } else {
                 log.warning("didnt get a valid SERVER_RESPONSE");
             }
 
@@ -112,61 +111,74 @@ public class Slave extends Thread {
         }
 
         public void run() {
-            while(true) {
-                try {
-                    // Receive multicast packet
-                    log.info("waiting for message");
+            while (true) try {
+                // Receive multicast packet
+                log.info("waiting for message");
 
-                    DatagramPacket syncPacket = new DatagramPacket(buffer, buffer.length);
-                    multicastSocket.receive(syncPacket);
-                    String syncId = "";
+                DatagramPacket syncPacket = new DatagramPacket(buffer, buffer.length);
+                multicastSocket.receive(syncPacket);
+                String syncId = "";
 
-                    // Note time at which we got sync message
-                    long syncTime = slaveClock.getTime();
+                // Note time at which we got sync message
+                long syncTime = slaveClock.getCurrentTime();
 
-                    // Expect it to be SYNC
-                    String syncMsg = new String(syncPacket.getData());
-                    if(syncMsg.substring(0, Protocol.SYNC.length()).equals(Protocol.SYNC)) {
-                        syncId = syncMsg.substring(Protocol.SYNC.length());
-                    }
-                    else {
-                        log.warning("got invalid multicast sync: " + syncMsg);
-                    }
-
-                    // Wait for follow_up
-                    DatagramPacket followupPacket = new DatagramPacket(buffer, buffer.length);
-                    multicastSocket.receive(followupPacket);
-                    String followupMsg = new String(followupPacket.getData());
-
-
-                    // Expect it to be follow up
-                    if(followupMsg.substring(0, Protocol.FOLLOW_UP.length()).equals(Protocol.FOLLOW_UP)) {
-                        String followupPayload = followupMsg.substring(Protocol.FOLLOW_UP.length());
-                        String followupId = followupPayload.substring(0, syncId.length());
-
-                        if(followupId.equals(syncId)) {
-
-                            // Retrieve master time from sync and determine ecart
-                            long tSyncMaster = Integer.valueOf(followupPayload.substring(followupId.length()));
-                            long ecart = Math.abs(tSyncMaster - syncTime);
-
-                            // Sync clock
-                            slaveClock.setEcart(ecart);
-                            log.info("multicast got tMaster post followup");
-
-                        }
-                        else {
-                            log.warning("multicast follow up id check failed! ["+syncId+"] - ["+followupId+"]: " + followupMsg);
-                        }
-                    }
-                    else {
-                        log.warning("got invalid multicast followup: " + followupMsg);
-                    }
-
-                } catch (Exception e) {
-                    log.severe("Failed receiving a packet");
+                // Expect it to be SYNC
+                String syncMsg = new String(syncPacket.getData());
+                log.info("Slave: syncMsg recu: " + syncMsg);
+                if (syncMsg.substring(0, Protocol.SYNC.length()).equals(Protocol.SYNC)) {
+                    syncId = syncMsg.substring(Protocol.SYNC.length());
+                } else {
+                    log.warning("got invalid multicast sync: " + syncMsg);
                 }
+
+                for(int i = 0; i < syncId.length(); i++){
+                    log.info("what" + syncId.charAt(i));
+                }
+
+                log.info("Slave: syncId recu: " + syncId);
+
+                // Wait for follow_up
+                DatagramPacket followupPacket = new DatagramPacket(buffer, buffer.length);
+                multicastSocket.receive(followupPacket);
+                String followupMsg = new String(followupPacket.getData());
+
+                log.info("Slave: folllowUp recu: " + followupMsg);
+
+
+                // Expect it to be follow up
+                if (followupMsg.startsWith(Protocol.FOLLOW_UP)) {
+                    String followupPayload = followupMsg.substring(Protocol.FOLLOW_UP.length());
+                    log.info("Slave: followupPayload recu: " + followupPayload);
+                    log.info("Slave: followupPayload.length(): " + followupPayload.toString().length());
+                    log.info("Slave: syncId.length(): " + syncId.toString().length());
+                    log.info("Slave: followupPayload: " + followupPayload);
+                    log.info("Slave: syncId: " + syncId);
+                    String followupId = followupPayload.substring(followupPayload.length() - syncId.length());
+
+                    if (followupId.equals(syncId)) {
+                        // Retrieve master time from sync and determine ecart
+                        long tSyncMaster = Integer.valueOf(followupPayload.substring(followupId.length()));
+                        long ecart = Math.abs(tSyncMaster - syncTime);
+
+                        // Sync clock
+                        slaveClock.setEcart(ecart);
+                        log.info("multicast got tMaster post followup");
+
+                    } else {
+                        log.warning("multicast follow up id check failed! [" + syncId + "] - [" + followupId + "]: " + followupMsg);
+                    }
+                } else {
+                    log.warning("got invalid multicast followup: " + followupMsg);
+                }
+
+            } catch (Exception e) {
+                log.severe("Failed receiving a packet : " + e.getMessage());
             }
         }
+    }
+
+    public static void main(String... args) {
+
+        Slave slave = new Slave("localhost", 4323, 2000, 900);
     }
 }

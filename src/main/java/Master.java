@@ -9,7 +9,7 @@ public class Master extends Thread {
 
     private MulticastSocket multicastSocket;
     private DatagramSocket masterSocket;
-    private Clock masterClock = new Clock(0);
+    private Clock masterClock = new Clock();
 
     private InetAddress multicastAddress;
 
@@ -24,9 +24,10 @@ public class Master extends Thread {
 
         try {
             multicastAddress = InetAddress.getByName(Protocol.MULTICAST_ADDRESS);
-            masterSocket = new DatagramSocket(masterPort);
-            multicastSocket = new MulticastSocket();
+            masterSocket = new DatagramSocket();
+            multicastSocket = new MulticastSocket(masterPort);
             multicastSocket.setInterface(InetAddress.getLocalHost());
+            multicastSocket.joinGroup(multicastAddress);
             start();
 
             // listen to packets from slaves
@@ -41,12 +42,12 @@ public class Master extends Thread {
 
     public void run() {
 
-        int tMaitre;
+        long tMaitre;
 
-        while (true) {
+        while(true) {
             try {
                 this.id += 1;
-                tMaitre = masterClock.getTime();
+                tMaitre = masterClock.getCurrentTime();
 
                 // Send sync
                 this.sendMulticast(Protocol.SYNC + this.id);
@@ -58,7 +59,7 @@ public class Master extends Thread {
 
                 sleep(this.k);
 
-            } catch (IOException e) {
+            } catch(IOException e) {
                 log.severe("Failed sending multicast payload");
             } catch (InterruptedException e) {
                 log.severe("sleep failed!");
@@ -84,22 +85,22 @@ public class Master extends Thread {
         }
 
         public void run() {
-            while (true) {
+            while(true) {
                 try {
                     // Wait te receive DELAY_REQUEST
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     masterSocket.receive(packet);
-                    Integer tMaster = masterClock.getTime();
+                    long tMaster = masterClock.getCurrentTime();
                     String msg = new String(packet.getData()).trim();
 
                     // Got a delay request
                     // Verify that it's actually a delay request, and isolate checking payload
-                    if (msg.substring(0, Protocol.DELAY_REQUEST.length()).equals(Protocol.DELAY_REQUEST)) {
+                    if(msg.substring(0, Protocol.DELAY_REQUEST.length()).equals(Protocol.DELAY_REQUEST)) {
 
                         // Extract slave check payload
                         String checkPayload = msg.substring(Protocol.DELAY_REQUEST.length());
 
-                        if (checkPayload.isEmpty())
+                        if(checkPayload.isEmpty())
                             log.warning("Got delay_request without check payload");
 
                         // get slave information
@@ -112,14 +113,14 @@ public class Master extends Thread {
                         masterSocket.send(slavePacket);
                     }
 
-                } catch (IOException e) {
+                } catch(IOException e) {
                     log.severe("failed receiving message");
                 }
             }
         }
     }
 
-    public static void main(String[] args) throws IOException {
-        Master master = new Master(4323, 500);
+    public static void main(String[] args) {
+        Master master = new Master(4446, 2000);
     }
 }
