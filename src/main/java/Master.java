@@ -24,7 +24,7 @@ public class Master extends Thread {
 
         try {
             multicastAddress = InetAddress.getByName(Protocol.MULTICAST_ADDRESS);
-            masterSocket = new DatagramSocket();
+            masterSocket = new DatagramSocket(Protocol.POINT_TO_POINT);
             multicastSocket = new MulticastSocket(masterPort);
             multicastSocket.setInterface(InetAddress.getLocalHost());
             multicastSocket.joinGroup(multicastAddress);
@@ -121,6 +121,6 @@ public class Master extends Thread {
     }
 
     public static void main(String[] args) {
-        Master master = new Master(4446, 2000);
+        Master master = new Master(4446, 500);
     }
 }

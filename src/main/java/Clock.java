@@ -3,19 +3,23 @@ import org.joda.time.DateTime;
 public class Clock {
 
     private long retard = 0;
-    private long delai   = 0;
-    private long ecart   = 0;
+    private long delai = 0;
+    private long ecart = 0;
 
     public Clock(long retard) {
         this.retard = retard;
     }
 
-    public Clock(){
+    public Clock() {
         this(0);
     }
 
-    public long getCurrentTime(){
-        return System.currentTimeMillis() + retard + delai + ecart;
+    public long getCurrentTime() {
+        return System.currentTimeMillis() + retard;
+    }
+
+    public long getCorrectedTime() {
+        return getCurrentTime() + delai + ecart;
     }
 
     public void setDelai(long delai) {

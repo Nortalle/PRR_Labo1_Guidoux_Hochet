@@ -34,6 +34,7 @@ public class Slave extends Thread {
         while (true) {
             try {
 
+                log.info("d===============================SDFFSDFFDSDFD=========================");
                 sleep(random(this.k * 4, this.k * 60));
                 delayRequest();
                 log.info("CurrentTime: " + slaveClock.getCurrentTime());
@@ -52,18 +53,19 @@ public class Slave extends Thread {
         return "swag";
     }
 
-    private void delayRequest() {
+    private synchronized void delayRequest() {
         try {
+            log.info("delayRequest()");
             // Build request packet, which includes DELAY_REQUEST and a check payload
             String check = checkPayload();
             byte[] request = (Protocol.DELAY_REQUEST + check).getBytes();
-            DatagramPacket packetToMaster = new DatagramPacket(request, request.length, masterAddress, masterPort);
+            DatagramPacket packetToMaster = new DatagramPacket(request, request.length, masterAddress, Protocol.POINT_TO_POINT);
             long localTimeSentRequest = slaveClock.getCurrentTime(); // Tes
             socket.send(packetToMaster);
 
             // Wait for server response
             byte[] response = new byte[1024];
-            DatagramPacket responsePacket = new DatagramPacket(response, response.length);
+            DatagramPacket responsePacket = new DatagramPacket(response, response.length, masterAddress, Protocol.POINT_TO_POINT);
             socket.receive(responsePacket);
 
             // Parse response, extract milliseconds
@@ -112,8 +114,7 @@ public class Slave extends Thread {
 
         public void run() {
 
-            boolean synced = false;
-            while (!synced) try {
+            while (true) try {
                 // Receive multicast packet
                 log.info("waiting for message");
 
@@ -126,22 +127,16 @@ public class Slave extends Thread {
 
                 // Expect it to be SYNC
                 String syncMsg = new String(syncPacket.getData(), 0, syncPacket.getLength());
-                log.info("Slave: syncMsg recu: " + syncMsg);
                 if (syncMsg.substring(0, Protocol.SYNC.length()).equals(Protocol.SYNC)) {
                     syncId = (syncMsg.substring(Protocol.SYNC.length()));
                 } else {
                     log.warning("got invalid multicast sync: " + syncMsg);
                 }
 
-                log.info("Slave: syncId recu: " + syncId);
-
                 // Wait for follow_up
                 DatagramPacket followupPacket = new DatagramPacket(buffer, buffer.length);
                 multicastSocket.receive(followupPacket);
                 String followupMsg = new String(followupPacket.getData(), 0, followupPacket.getLength());
-
-                log.info("Slave: folllowUp recu: " + followupMsg);
-
 
                 // Expect it to be follow up
                 if (followupMsg.startsWith(Protocol.FOLLOW_UP)) {
@@ -157,8 +152,10 @@ public class Slave extends Thread {
                         // Sync clock
                         slaveClock.setEcart(ecart);
                         log.info("multicast got tMaster post followup : " + ecart);
-                        synced = true;
+                        if (!Slave.this.isAlive()) {
 
+                            Slave.this.start();
+                        }
                     } else {
                         log.warning("multicast follow up id check failed! [" + syncId + "] - [" + followupId + "]: " + followupMsg);
                     }
@@ -174,6 +171,6 @@ public class Slave extends Thread {
 
     public static void main(String... args) {
 
-        Slave slave = new Slave("localhost", 4446, 2000, 900);
+        Slave slave = new Slave("localhost", 4446, 500, 900);
     }
 }
