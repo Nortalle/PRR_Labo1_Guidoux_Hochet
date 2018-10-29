@@ -123,16 +123,12 @@ public class Slave extends Thread {
                 long syncTime = slaveClock.getCurrentTime();
 
                 // Expect it to be SYNC
-                String syncMsg = new String(syncPacket.getData());
+                String syncMsg = new String(syncPacket.getData(), 0, syncPacket.getLength());
                 log.info("Slave: syncMsg recu: " + syncMsg);
                 if (syncMsg.substring(0, Protocol.SYNC.length()).equals(Protocol.SYNC)) {
-                    syncId = syncMsg.substring(Protocol.SYNC.length());
+                    syncId = (syncMsg.substring(Protocol.SYNC.length()));
                 } else {
                     log.warning("got invalid multicast sync: " + syncMsg);
-                }
-
-                for(int i = 0; i < syncId.length(); i++){
-                    log.info("what" + syncId.charAt(i));
                 }
 
                 log.info("Slave: syncId recu: " + syncId);
@@ -140,29 +136,25 @@ public class Slave extends Thread {
                 // Wait for follow_up
                 DatagramPacket followupPacket = new DatagramPacket(buffer, buffer.length);
                 multicastSocket.receive(followupPacket);
-                String followupMsg = new String(followupPacket.getData());
+                String followupMsg = new String(followupPacket.getData(), 0, followupPacket.getLength());
 
                 log.info("Slave: folllowUp recu: " + followupMsg);
 
 
                 // Expect it to be follow up
                 if (followupMsg.startsWith(Protocol.FOLLOW_UP)) {
-                    String followupPayload = followupMsg.substring(Protocol.FOLLOW_UP.length());
-                    log.info("Slave: followupPayload recu: " + followupPayload);
-                    log.info("Slave: followupPayload.length(): " + followupPayload.toString().length());
-                    log.info("Slave: syncId.length(): " + syncId.toString().length());
-                    log.info("Slave: followupPayload: " + followupPayload);
-                    log.info("Slave: syncId: " + syncId);
+                    String followupPayload = (followupMsg.substring(Protocol.FOLLOW_UP.length()));
                     String followupId = followupPayload.substring(followupPayload.length() - syncId.length());
 
                     if (followupId.equals(syncId)) {
+
                         // Retrieve master time from sync and determine ecart
-                        long tSyncMaster = Integer.valueOf(followupPayload.substring(followupId.length()));
+                        long tSyncMaster = Long.valueOf((followupPayload.substring(0, followupPayload.length() - syncId.length())).trim());
                         long ecart = Math.abs(tSyncMaster - syncTime);
 
                         // Sync clock
                         slaveClock.setEcart(ecart);
-                        log.info("multicast got tMaster post followup");
+                        log.info("multicast got tMaster post followup : " + ecart);
 
                     } else {
                         log.warning("multicast follow up id check failed! [" + syncId + "] - [" + followupId + "]: " + followupMsg);
