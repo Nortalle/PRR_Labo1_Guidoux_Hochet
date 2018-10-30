@@ -1,3 +1,14 @@
+/*
+ * File         : Master.java
+ * Labo         : Labo_1_Synchronisation_Horloges
+ * Project      : PRR_Labo1_Guidoux_Hochet
+ * Authors      : Hochet Guillaume 30 octobre 2018
+ *                Guidoux Vincent 30 octobre 2018
+ *
+ * Description  :
+ *
+ */
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;

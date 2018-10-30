@@ -1,4 +1,14 @@
-import org.joda.time.DateTime;
+/*
+ * File         : Clock.java
+ * Labo         : Labo_1_Synchronisation_Horloges
+ * Project      : PRR_Labo1_Guidoux_Hochet
+ * Authors      : Hochet Guillaume 30 octobre 2018
+ *                Guidoux Vincent 30 octobre 2018
+ *
+ * Description  : We implemented a clock with some attribute to handle
+ *                delay, gaps... etc We used french for the variables because of the
+ *
+ */
 
 public class Clock {
 

@@ -1,3 +1,14 @@
+/*
+ * File         : Slave.java
+ * Labo         : Labo_1_Synchronisation_Horloges
+ * Project      : PRR_Labo1_Guidoux_Hochet
+ * Authors      : Hochet Guillaume 30 octobre 2018
+ *                Guidoux Vincent 30 octobre 2018
+ *
+ * Description  :
+ *
+ */
+
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -34,8 +45,7 @@ public class Slave extends Thread {
         while (true) {
             try {
 
-                sleep(random(this.k * 1, this.k * 2));
-                log.info("d===============================SDFFSDFFDSDFD=========================");
+                sleep(random(this.k * 4, this.k * 60));
                 delayRequest();
                 log.info("CurrentTime: " + slaveClock.getCurrentTime());
 
@@ -174,6 +184,6 @@ public class Slave extends Thread {
 
     public static void main(String... args) {
 
-        Slave slave = new Slave("localhost", 4446, 2000, 900);
+        Slave slave = new Slave("192.168.1.108", 4446, 2000, 900);
     }
 }
