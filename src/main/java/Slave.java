@@ -5,8 +5,10 @@
  * Authors      : Hochet Guillaume 30 octobre 2018
  *                Guidoux Vincent 30 octobre 2018
  *
- * Description  :
+ * Description  : Slave with an intern clock which listen and discuss with a master on Multicast UDP to be sync
+ *                with his clock
  *
+ * Source       : https://fr.wikipedia.org/wiki/Precision_Time_Protocol#D%C3%A9lai_aller
  */
 
 import java.io.IOException;
@@ -25,11 +27,20 @@ public class Slave extends Thread {
     private Integer k;
     private SlaveListener listener;
 
+    /**
+     * Create a slave that can send and receive message on UDP with a master, and a given delay to test the protocol
+     * use that in dev
+     *
+     * @param masterAddress : ip address of the master
+     * @param k             : delay between multicast listening
+     * @param retard        : given delay to test the protocol
+     */
     public Slave(String masterAddress, Integer k, Integer retard) {
         try {
             this.listener = new SlaveListener();
             this.masterAddress = InetAddress.getByName(masterAddress);
-            this.slaveClock = new Clock("slave",(retard));
+            //random delay on the clock
+            this.slaveClock = new Clock("slave", random(1000, retard));
             this.socket = new DatagramSocket();
             this.k = k;
 
@@ -39,10 +50,23 @@ public class Slave extends Thread {
         }
     }
 
+    /**
+     * Create a slave that can send and receive message on UDP with a master, will use that in prod
+     *
+     * @param masterAddress
+     * @param k
+     */
+    public Slave(String masterAddress, Integer k) {
+        this(masterAddress, k, 0);
+    }
+
+    /**
+     * Second part of the protocol
+     */
     public void run() {
         while (true) {
             try {
-
+                //should be random(this.k * 4, this.k * 60), but for demonstration and tests, it's easier.
                 sleep(random(this.k * 1, this.k * 2));
                 delayRequest();
                 log.info("CurrentTime: " + slaveClock.getCorrectedTime());
@@ -53,14 +77,25 @@ public class Slave extends Thread {
         }
     }
 
+    /**
+     * @param min : minimum value
+     * @param max : maximum value
+     * @return an int between min(include) and max(include)
+     */
     private int random(int min, int max) {
         return (int) (Math.random() * ((max - min) + 1)) + min;
     }
 
+    /**
+     * @return a unique id to use like a checksum
+     */
     private String checkPayload() {
-        return "swag";
+        return Integer.toString(random(1,100));
     }
 
+    /**
+     * Point-to-point with the master to the step two of the protocol
+     */
     private void delayRequest() {
         try {
             log.info("delayRequest()");
@@ -103,6 +138,9 @@ public class Slave extends Thread {
         }
     }
 
+    /**
+     * Listen to the multicast for step one
+     */
     class SlaveListener extends Thread {
 
         private MulticastSocket multicastSocket;
@@ -123,6 +161,9 @@ public class Slave extends Thread {
             }
         }
 
+        /**
+         * step one of the protocol
+         */
         public void run() {
 
             while (true) try {
@@ -183,6 +224,6 @@ public class Slave extends Thread {
 
     public static void main(String... args) {
 
-        Slave slave = new Slave("192.168.43.49", 2000, 1000000000);
+        Slave slave = new Slave("localhost", 2000, 1000000000);
     }
 }

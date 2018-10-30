@@ -5,7 +5,10 @@
  * Authors      : Hochet Guillaume 30 octobre 2018
  *                Guidoux Vincent 30 octobre 2018
  *
- * Description  :
+ * Description  : Implements a master that dialog with slaves with UDP to sync them with the
+ *                master's clock.
+ *
+ * Source       : https://fr.wikipedia.org/wiki/Precision_Time_Protocol#D%C3%A9lai_aller
  *
  */
 
@@ -18,17 +21,19 @@ import java.util.logging.Logger;
 
 public class Master extends Thread {
 
-    private MulticastSocket multicastSocket;
-    private DatagramSocket masterSocket;
     private Clock masterClock = new Clock("master");
-
+    private MulticastSocket multicastSocket;
     private InetAddress multicastAddress;
+    private DatagramSocket masterSocket;
 
-    private Integer k;
     private Integer id = 0;
+    private Integer k;
 
     private Logger log = Logger.getLogger("Master");
 
+    /**
+     * @param k : delay between multicast
+     */
     public Master(Integer k) {
 
         this.k = k;
@@ -39,7 +44,7 @@ public class Master extends Thread {
             multicastSocket = new MulticastSocket();
             multicastSocket.setInterface(InetAddress.getLocalHost());
             multicastSocket.joinGroup(multicastAddress);
-            start();
+            start(); //starts the first part of the protocol to sync slaves (SYNC/FOLLOW_UP)
 
             // listen to packets from slaves
             MasterListener listener = new MasterListener();
@@ -51,6 +56,9 @@ public class Master extends Thread {
         }
     }
 
+    /**
+     * Threads that runs the first part of the protocol to sync slaves (SYNC/FOLLOW_UP)
+     */
     public void run() {
 
         long tMaitre;
@@ -78,6 +86,12 @@ public class Master extends Thread {
         }
     }
 
+    /**
+     * Send the given payload to a multicast group
+     *
+     * @param payload       : payload to send to the multicast group
+     * @throws IOException  : if something bad happen during the multicasting
+     */
     private void sendMulticast(String payload) throws IOException {
 
         // Build sync payload
@@ -87,6 +101,9 @@ public class Master extends Thread {
         multicastSocket.send(packet);
     }
 
+    /**
+     * Threads needed to the second part of the protocol
+     */
     class MasterListener extends Thread {
 
         private byte[] buffer = new byte[1024];
@@ -95,6 +112,9 @@ public class Master extends Thread {
             log.info("Master listener listening");
         }
 
+        /**
+         * second part of the protocol IEEE 1588
+         */
         public void run() {
             while(true) {
                 try {
