@@ -20,17 +20,15 @@ public class Slave extends Thread {
 
     private Logger log = Logger.getLogger("Slave");
     private InetAddress masterAddress;
-    private Integer masterPort;
     private DatagramSocket socket;
     private Clock slaveClock;
     private Integer k;
     private SlaveListener listener;
 
-    public Slave(String masterAddress, Integer masterPort, Integer k, Integer retard) {
+    public Slave(String masterAddress, Integer k, Integer retard) {
         try {
             this.listener = new SlaveListener();
             this.masterAddress = InetAddress.getByName(masterAddress);
-            this.masterPort = masterPort;
             this.slaveClock = new Clock(retard);
             this.socket = new DatagramSocket();
             this.k = k;
@@ -45,9 +43,9 @@ public class Slave extends Thread {
         while (true) {
             try {
 
-                sleep(random(this.k * 4, this.k * 60));
+                sleep(random(this.k * 1, this.k * 2));
                 delayRequest();
-                log.info("CurrentTime: " + slaveClock.getCurrentTime());
+                log.info("CurrentTime: " + slaveClock.getCorrectedTime());
 
             } catch (InterruptedException e) {
                 log.severe("Slave failed sleeping");
@@ -184,6 +182,6 @@ public class Slave extends Thread {
 
     public static void main(String... args) {
 
-        Slave slave = new Slave("192.168.1.108", 4446, 2000, 900);
+        Slave slave = new Slave("192.168.1.108", 2000, 900);
     }
 }

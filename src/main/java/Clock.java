@@ -6,7 +6,8 @@
  *                Guidoux Vincent 30 octobre 2018
  *
  * Description  : We implemented a clock with some attribute to handle
- *                delay, gaps... etc We used french for the variables because of the
+ *                delay, gaps... etc We used french for the variables to be consistent with
+ *                the lab
  *
  */
 
@@ -56,7 +57,7 @@ public class Clock {
     private void updateOffset(){
 
         long d = (ecart + delai) / 2;
-        this.offset = ecart - d;
+        this.offset = -(ecart - d);
     }
 
     public long getOffset() {

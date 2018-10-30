@@ -29,14 +29,14 @@ public class Master extends Thread {
 
     private Logger log = Logger.getLogger("Master");
 
-    public Master(Integer masterPort, Integer k) {
+    public Master(Integer k) {
 
         this.k = k;
 
         try {
             multicastAddress = InetAddress.getByName(Protocol.MULTICAST_ADDRESS);
             masterSocket = new DatagramSocket(Protocol.POINT_TO_POINT);
-            multicastSocket = new MulticastSocket(masterPort);
+            multicastSocket = new MulticastSocket();
             multicastSocket.setInterface(InetAddress.getLocalHost());
             multicastSocket.joinGroup(multicastAddress);
             start();
@@ -132,6 +132,6 @@ public class Master extends Thread {
     }
 
     public static void main(String[] args) {
-        Master master = new Master(4446, 2000);
+        Master master = new Master(2000);
     }
 }
