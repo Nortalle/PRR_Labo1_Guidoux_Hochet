@@ -29,7 +29,7 @@ public class Slave extends Thread {
         try {
             this.listener = new SlaveListener();
             this.masterAddress = InetAddress.getByName(masterAddress);
-            this.slaveClock = new Clock(retard);
+            this.slaveClock = new Clock("slave",(retard));
             this.socket = new DatagramSocket();
             this.k = k;
 
@@ -61,7 +61,7 @@ public class Slave extends Thread {
         return "swag";
     }
 
-    private synchronized void delayRequest() {
+    private void delayRequest() {
         try {
             log.info("delayRequest()");
             // Build request packet, which includes DELAY_REQUEST and a check payload
@@ -166,6 +166,7 @@ public class Slave extends Thread {
                         if (!Slave.this.isAlive()) {
 
                             Slave.this.start();
+                            delayRequest();
                         }
                     } else {
                         log.warning("multicast follow up id check failed! [" + syncId + "] - [" + followupId + "]: " + followupMsg);
@@ -182,6 +183,6 @@ public class Slave extends Thread {
 
     public static void main(String... args) {
 
-        Slave slave = new Slave("192.168.1.108", 2000, 900);
+        Slave slave = new Slave("192.168.43.49", 2000, 1000000000);
     }
 }

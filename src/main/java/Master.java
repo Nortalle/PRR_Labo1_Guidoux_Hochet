@@ -20,7 +20,7 @@ public class Master extends Thread {
 
     private MulticastSocket multicastSocket;
     private DatagramSocket masterSocket;
-    private Clock masterClock = new Clock();
+    private Clock masterClock = new Clock("master");
 
     private InetAddress multicastAddress;
 

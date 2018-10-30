@@ -8,10 +8,19 @@
  * Description  : We implemented a clock with some attribute to handle
  *                delay, gaps... etc We used french for the variables to be consistent with
  *                the lab
- *
+ * Source       : https://www.javacodex.com/Swing/Digital-Clock
  */
 
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 public class Clock {
+
+    private String name = "";
 
     private long retard = 0;
 
@@ -20,12 +29,30 @@ public class Clock {
 
     private long offset = 0;
 
-    public Clock(long retard) {
+    public Clock(String name, long retard) {
+        this.name = name;
         this.retard = retard;
+        ClockLabel dateLable = new ClockLabel("date");
+        ClockLabel timeLable = new ClockLabel("time");
+        ClockLabel dayLable = new ClockLabel("day");
+
+        JFrame.setDefaultLookAndFeelDecorated(true);
+        JFrame f = new JFrame(name);
+        f.setSize(300,150);
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.setLayout(new GridLayout(3, 1));
+
+        f.add(dateLable);
+        f.add(timeLable);
+        f.add(dayLable);
+
+        f.getContentPane().setBackground(Color.black);
+
+        f.setVisible(true);
     }
 
-    public Clock() {
-        this(0);
+    public Clock(String name) {
+        this(name,0);
     }
 
     public long getCurrentTime() {
@@ -33,7 +60,7 @@ public class Clock {
     }
 
     public long getCorrectedTime() {
-        return getCurrentTime() + retard + ecart;
+        return getCurrentTime() - offset;
     }
 
     public void setDelai(long delai) {
@@ -57,11 +84,49 @@ public class Clock {
     private void updateOffset(){
 
         long d = (ecart + delai) / 2;
-        this.offset = -(ecart - d);
+        this.offset = ecart - d;
     }
 
     public long getOffset() {
         return offset;
     }
 
+    class ClockLabel extends JLabel implements ActionListener {
+
+        final String type;
+        SimpleDateFormat sdf;
+
+        public ClockLabel(String type) {
+            this.type = type;
+            setForeground(Color.green);
+
+            if ("date".equals(type)) {
+                sdf = new SimpleDateFormat("  MMMM dd yyyy");
+                setFont(new Font("sans-serif", Font.PLAIN, 12));
+                setHorizontalAlignment(SwingConstants.LEFT);
+
+            } else if ("time".equals(type)) {
+                sdf = new SimpleDateFormat("hh:mm:ss a");
+                setFont(new Font("sans-serif", Font.PLAIN, 40));
+                setHorizontalAlignment(SwingConstants.CENTER);
+
+            } else if ("day".equals(type)) {
+                sdf = new SimpleDateFormat("EEEE  ");
+                setFont(new Font("sans-serif", Font.PLAIN, 16));
+                setHorizontalAlignment(SwingConstants.RIGHT);
+
+            } else {
+                sdf = new SimpleDateFormat();
+
+            }
+
+            Timer t = new Timer(50, this);
+            t.start();
+        }
+
+        public void actionPerformed(ActionEvent ae) {
+            Date d = new Date(getCorrectedTime());
+            setText(sdf.format(d));
+        }
+    }
 }
